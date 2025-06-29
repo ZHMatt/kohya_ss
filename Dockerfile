@@ -3,6 +3,7 @@
 ARG UID=1000
 ARG VERSION=EDGE
 ARG RELEASE=0
+ARG USERNAME=appuser  # <-- Added a valid username
 
 ########################################
 # Base stage
@@ -85,6 +86,8 @@ RUN if [ "$TARGETPLATFORM" = "linux/amd64" ]; then \
 ########################################
 FROM base AS final
 
+ARG UID
+ARG USERNAME=appuser
 ARG TARGETARCH
 ARG TARGETVARIANT
 
@@ -101,10 +104,9 @@ RUN apt-get update && \
 RUN ln -s /usr/lib/x86_64-linux-gnu/libnvinfer.so /usr/lib/x86_64-linux-gnu/libnvinfer.so.7 || true && \
     ln -s /usr/lib/x86_64-linux-gnu/libnvinfer_plugin.so /usr/lib/x86_64-linux-gnu/libnvinfer_plugin.so.7 || true
 
-# Create user
-ARG UID
-RUN groupadd -g $UID $UID && \
-    useradd -l -u $UID -g $UID -m -s /bin/sh -N $UID
+# Create user and group
+RUN groupadd -g $UID $USERNAME && \
+    useradd -l -u $UID -g $UID -m -s /bin/sh -N $USERNAME
 
 # Create necessary directories
 RUN install -d -m 775 -o $UID -g 0 /dataset && \
@@ -134,7 +136,7 @@ VOLUME [ "/dataset" ]
 
 EXPOSE 7860
 
-USER $UID
+USER $USERNAME
 STOPSIGNAL SIGINT
 
 ENTRYPOINT ["dumb-init", "--"]
